@@ -66,6 +66,11 @@ func setup(g globals) (*env, error) {
 	}
 	if g.apiKey != "" {
 		cfg.Steam.APIKey = g.apiKey
+	} else if cfg.Steam.APIKey == "" {
+		// Env var avoids exposing the key in argv (visible via `ps`) or shell history.
+		if k := os.Getenv("DECKDEX_STEAM_API_KEY"); k != "" {
+			cfg.Steam.APIKey = k
+		}
 	}
 	if g.native {
 		cfg.ProtonDB.DetectNative = true

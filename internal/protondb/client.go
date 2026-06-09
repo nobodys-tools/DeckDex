@@ -38,6 +38,10 @@ const (
 	algoliaKey      = "9ba0e69fb2974316cdaec8f5f257088f"
 	algoliaQueryURL = "https://94HE6YATEI-dsn.algolia.net/1/indexes/steamdb/query"
 	nativeBatchSize = 100 // objectIDs OR-ed per Algolia query
+
+	// maxResponseBytes caps any single response body to avoid unbounded memory
+	// use from an unexpectedly huge or hostile response.
+	maxResponseBytes = 32 << 20 // 32 MiB
 )
 
 // Client talks to ProtonDB. Construct with New.
@@ -341,7 +345,7 @@ func (c *Client) do(ctx context.Context, method, url string, body []byte, hdr ht
 			c.logBackoff(url, "network error: "+err.Error(), attempt, c.sleepBackoff(ctx, attempt, 0))
 			continue
 		}
-		data, _ := io.ReadAll(resp.Body)
+		data, _ := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes))
 		resp.Body.Close()
 
 		if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500 {

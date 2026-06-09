@@ -46,6 +46,24 @@ bin="$INSTALL_DIR/deckdex${ext}"
 
 printf 'Downloading %s (latest release)...\n' "$asset"
 curl -fSL --progress-bar "$url" -o "$bin" || err "download failed: $url"
+
+# Verify the download against the release SHA256SUMS.
+sums="$(curl -fsSL "https://github.com/$REPO/releases/latest/download/SHA256SUMS" 2>/dev/null || true)"
+if [ -n "$sums" ]; then
+	want="$(printf '%s\n' "$sums" | awk -v f="$asset" '$2 == f { print $1 }')"
+	if command -v sha256sum >/dev/null 2>&1; then got="$(sha256sum "$bin" | awk '{print $1}')";
+	elif command -v shasum >/dev/null 2>&1; then got="$(shasum -a 256 "$bin" | awk '{print $1}')";
+	else got=""; fi
+	if [ -n "$want" ] && [ -n "$got" ]; then
+		[ "$got" = "$want" ] || { rm -f "$bin"; err "checksum mismatch for $asset (expected $want, got $got)"; }
+		printf 'Checksum verified.\n'
+	else
+		printf 'Note: could not verify checksum (missing entry or no sha256 tool).\n'
+	fi
+else
+	printf 'Note: SHA256SUMS unavailable; skipping checksum verification.\n'
+fi
+
 chmod +x "$bin"
 printf 'Installed to %s\n\n' "$bin"
 

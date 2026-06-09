@@ -52,6 +52,9 @@ Grab a free key at **<https://steamcommunity.com/dev/apikey>** (any domain works
 private. Without a key, DeckDex falls back to local files and only sees installed/played
 games.
 
+You can pass the key with `--api-key`, set it in the config file, or export
+`DECKDEX_STEAM_API_KEY` (the env var keeps it out of your shell history and process list).
+
 ### 2. Run the recommended command
 
 ```sh
