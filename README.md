@@ -95,6 +95,23 @@ Presets (`--preset`): `per-tier`, `playable`, `borked-only`, `native-only`. Nati
 detection auto-enables for presets that use it (pass `--no-native` to skip). For full
 control, define `[[collection]]` blocks in your config instead.
 
+## Uninstall
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/nobodys-tools/DeckDex/main/uninstall.sh | sh
+```
+
+It offers to remove the Steam collections DeckDex created (via `deckdex prune`) first, then
+deletes the binary, cache, config, state and backups. Add `-y` to skip prompts.
+
+Manual cleanup instead (leaves your Steam collections in place — run `deckdex prune` first
+if you want those gone too):
+
+```sh
+deckdex prune                              # optional: remove the collections it created
+rm -rf ~/.local/bin/deckdex ~/.cache/deckdex ~/.config/deckdex   # binary, cache, config, state, backups
+```
+
 ## Build from source
 
 For contributors — the build runs entirely in Docker, **no host Go toolchain needed**. A
