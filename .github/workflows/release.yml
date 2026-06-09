@@ -1,0 +1,75 @@
+name: release
+
+# Auto-bumps the version, cross-compiles every target, and publishes a GitHub
+# release with the binaries attached. Runs on every push to main (skip with
+# "[skip release]" in the commit message) or manually with an explicit bump.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump"
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: ${{ github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip release]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # full tag history for the version bump
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.26"
+
+      - name: Compute next version
+        id: ver
+        run: |
+          set -eu
+          latest="$(git tag -l 'v*' --sort=-v:refname | head -n1)"
+          if [ -z "$latest" ]; then
+            next="v1.0.0"           # first release
+          else
+            v="${latest#v}"; MA="${v%%.*}"; rest="${v#*.}"; MI="${rest%%.*}"; PA="${rest##*.}"
+            bump="${{ github.event.inputs.bump }}"
+            if [ -z "$bump" ]; then
+              msg="$(git log -1 --pretty=%B)"
+              case "$msg" in
+                *"#major"*|*"BREAKING CHANGE"*) bump=major ;;
+                *"#minor"*|feat:*|feat\(*)      bump=minor ;;
+                *)                              bump=patch ;;
+              esac
+            fi
+            case "$bump" in
+              major) MA=$((MA+1)); MI=0; PA=0 ;;
+              minor) MI=$((MI+1)); PA=0 ;;
+              *)     PA=$((PA+1)) ;;
+            esac
+            next="v${MA}.${MI}.${PA}"
+          fi
+          echo "version=$next" >> "$GITHUB_OUTPUT"
+          echo "Releasing $next"
+
+      - name: Build binaries
+        run: VERSION="${{ steps.ver.outputs.version }}" OUT=dist sh scripts/build.sh
+
+      - name: Checksums
+        run: (cd dist && sha256sum * > SHA256SUMS)
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.ver.outputs.version }}" dist/* \
+            --target "${{ github.sha }}" \
+            --title "${{ steps.ver.outputs.version }}" \
+            --notes "Automated release ${{ steps.ver.outputs.version }}."

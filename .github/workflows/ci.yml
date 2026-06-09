@@ -1,0 +1,27 @@
+name: ci
+
+# Vet, test (with the race detector), and a build smoke-check on pull requests
+# and non-main pushes.
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.26"
+      - name: Vet
+        run: go vet ./...
+      - name: Test (race)
+        run: go test -race ./...
+      - name: Build all targets
+        run: VERSION=ci OUT=dist sh scripts/build.sh

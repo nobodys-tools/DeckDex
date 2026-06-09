@@ -1,0 +1,53 @@
+# DeckDex example configuration.
+#
+# Copy to your OS config dir as deckdex/config.toml, e.g.:
+#   Linux/BSD : ~/.config/deckdex/config.toml
+#   macOS     : ~/Library/Application Support/deckdex/config.toml
+#   Windows   : %AppData%\deckdex\config.toml
+# or pass --config <path>. Every value here is optional.
+
+[steam]
+# A free Steam Web API key (https://steamcommunity.com/dev/apikey) gives your
+# FULL owned-games list. It reads your own account even if your profile is
+# private. Without it, DeckDex only sees installed/played games from local files.
+# api_key      = "YOUR_STEAM_WEB_API_KEY"
+
+# The rest are optional — auto-detected when omitted.
+# steam_id64   = "76561198XXXXXXXXX"
+# account_id   = "XXXXXXXX"                 # the userdata/<account_id> folder name
+# path         = "/custom/Steam/root"       # overrides auto-discovery
+
+[protondb]
+cache_ttl_days   = 30      # established-game cache TTL (newer games refresh sooner)
+# By default the sweep is a pure ProtonDB tier pull: ONE request per game.
+# Each option below adds one extra request per game (cached after the first run):
+detect_native    = false   # flag native-Linux games (+1 ProtonDB/Algolia call/game)
+filter_non_games = false   # drop DLC/tools/soundtracks (+1 Steam appdetails call/game)
+native_can_tier  = false   # if true, native games are ALSO eligible for tier collections
+max_rps          = 50      # ProtonDB request rate; lower it if you hit 429s
+max_concurrency  = 16      # in-flight request cap
+
+# --- Collection definitions -------------------------------------------------
+# Each [[collection]] block becomes one static Steam collection. A game may land
+# in multiple collections. If you define no collections here, use a --preset
+# (per-tier | playable | borked-only | native-only) instead.
+
+[[collection]]
+name  = "ProtonDB · Platinum"
+tiers = ["platinum"]
+
+[[collection]]
+name  = "ProtonDB · Playable"
+tiers = ["platinum", "gold"]
+
+[[collection]]
+name  = "Runs Great or Native"
+tiers = ["native", "platinum", "gold"]
+
+[[collection]]
+name  = "Borked"
+tiers = ["borked"]
+
+[[collection]]
+name  = "Everything Rated"
+tiers = ["all"]            # reserved token: every category

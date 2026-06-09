@@ -1,0 +1,37 @@
+# --- Secrets / personal data (NEVER commit) ---
+# Browser localStorage / session dumps, auth tokens (incl. misspellings).
+*localstorage*
+*localStorage*
+*localstogage*
+*.localstorage
+*.token
+token.json
+# User config that may hold API keys / SteamID / profile hash.
+config.toml
+config.local.*
+*.local.toml
+.env
+.env.*
+
+# --- Go build artifacts ---
+# Binaries ship via releases (GitHub Actions), not in-tree.
+dist/
+bin/
+/deckdex
+/deckdex.exe
+*.test
+*.out
+coverage.*
+vendor/
+
+# --- Agent / editor local settings ---
+.claude/
+
+# --- Editor / OS noise ---
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
