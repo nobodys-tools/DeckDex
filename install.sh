@@ -5,9 +5,9 @@
 #   # or: sh install.sh
 #
 # It downloads the right prebuilt binary for your system from the latest
-# release, runs `deckdex detect` so you can confirm it found the correct Steam
-# install/account, optionally takes a Steam Web API key, then runs
-# `deckdex sync --preset per-tier`.
+# release, verifies its checksum, runs `deckdex detect` so you can confirm it
+# found the correct Steam install/account, optionally takes a Steam Web API key,
+# then runs `deckdex sync --preset per-tier`.
 #
 # Env overrides: DECKDEX_INSTALL_DIR (default ~/.local/bin),
 #                DECKDEX_REPO (default nobodys-tools/DeckDex).
@@ -76,8 +76,18 @@ esac
 printf '== deckdex detect ==\n'
 "$bin" detect || err "detection failed — set [steam].path or --steam-path and re-run."
 
+# Under `curl | sh` the script's stdin IS the script, so prompts (and the binary
+# we invoke) must read from the terminal. If there is no terminal, finish
+# non-interactively and tell the user the command to run.
+if [ ! -r /dev/tty ]; then
+	printf '\nInstalled. To create the collections, run:\n'
+	printf '  deckdex sync --preset per-tier --api-key <your-key>\n'
+	printf '(get a free key at https://steamcommunity.com/dev/apikey; omit --api-key for local games only)\n'
+	exit 0
+fi
+
 printf '\nIs the Steam install and account above correct? [y/N] '
-read -r ok
+read -r ok < /dev/tty
 case "$ok" in
 	y|Y|yes|YES) ;;
 	*) err "Aborted. Re-run with --steam-path / --account-id once the right install is set." ;;
@@ -87,15 +97,17 @@ esac
 printf '\nA free Steam Web API key fetches your FULL library (https://steamcommunity.com/dev/apikey).\n'
 printf 'Paste a key for the full library, or press Enter to use local installed games only:\n'
 printf 'Steam Web API key (optional): '
-stty -echo 2>/dev/null || true
-read -r key || true
-stty echo 2>/dev/null || true
+stty -echo < /dev/tty 2>/dev/null || true
+read -r key < /dev/tty || true
+stty echo < /dev/tty 2>/dev/null || true
 printf '\n'
 
 # --- sync ------------------------------------------------------------------
+# Redirect the binary's stdin from the terminal so its write-confirmation prompt
+# works under `curl | sh`.
 printf '\nRunning: deckdex sync --preset per-tier%s\n\n' "$( [ -n "${key:-}" ] && printf ' --api-key <hidden>' )"
 if [ -n "${key:-}" ]; then
-	"$bin" sync --preset per-tier --api-key "$key"
+	"$bin" sync --preset per-tier --api-key "$key" < /dev/tty
 else
-	"$bin" sync --preset per-tier
+	"$bin" sync --preset per-tier < /dev/tty
 fi
