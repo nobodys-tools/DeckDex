@@ -321,14 +321,8 @@ func runSync(g globals) error {
 // writeCollections performs the guarded write: Steam-running check, backup,
 // per-collection upsert, atomic write, and state update.
 func writeCollections(e *env, st *state.State, planned []engine.PlannedCollection) error {
-	if steam.IsSteamRunning() {
-		if e.g.killSteam {
-			fmt.Println("closing Steam ...")
-			_ = steam.KillSteam()
-			time.Sleep(2 * time.Second)
-		} else {
-			return fmt.Errorf("Steam is running — close it and re-run, or pass --kill-steam (writing while Steam runs may be overwritten on sync)")
-		}
+	if err := ensureSteamClosed(e.g); err != nil {
+		return err
 	}
 
 	collPath := e.root.CollectionsPath(e.account)
@@ -434,13 +428,8 @@ func cmdPrune(args []string) error {
 		fmt.Println("aborted.")
 		return nil
 	}
-	if steam.IsSteamRunning() {
-		if g.killSteam {
-			_ = steam.KillSteam()
-			time.Sleep(2 * time.Second)
-		} else {
-			return fmt.Errorf("Steam is running — close it and re-run, or pass --kill-steam")
-		}
+	if err := ensureSteamClosed(g); err != nil {
+		return err
 	}
 
 	collPath := e.root.CollectionsPath(e.account)
@@ -501,8 +490,8 @@ func cmdRestore(args []string) error {
 		fmt.Println("aborted.")
 		return nil
 	}
-	if steam.IsSteamRunning() && !g.killSteam {
-		return fmt.Errorf("Steam is running — close it and re-run, or pass --kill-steam")
+	if err := ensureSteamClosed(g); err != nil {
+		return err
 	}
 	if err := collections.Restore(backupPath, collPath); err != nil {
 		return err
@@ -531,6 +520,31 @@ func progressReporter() func(done, total int) {
 			fmt.Fprintln(os.Stderr)
 		}
 	}
+}
+
+// ensureSteamClosed makes sure Steam is not running before a write. With
+// --kill-steam it closes Steam directly (for unattended/cron use). Otherwise,
+// when interactive it offers to close it; if declined or non-interactive, it
+// returns an error. Steam caches collections client-side and overwrites the
+// on-disk file on next sync, so writing while it runs is unsafe.
+func ensureSteamClosed(g globals) error {
+	if !steam.IsSteamRunning() {
+		return nil
+	}
+	kill := g.killSteam
+	if !kill && !g.yes {
+		kill = confirm("Steam is running — close it now? (writes are overwritten otherwise)")
+	}
+	if !kill {
+		return fmt.Errorf("Steam is running — close it and re-run, or pass --kill-steam (for cron: --kill-steam --yes)")
+	}
+	fmt.Println("closing Steam ...")
+	_ = steam.KillSteam()
+	time.Sleep(2 * time.Second)
+	if steam.IsSteamRunning() {
+		fmt.Println("note: Steam is still shutting down; continuing")
+	}
+	return nil
 }
 
 func yesno(b bool) string {

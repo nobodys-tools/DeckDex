@@ -84,7 +84,7 @@ func (r *Resolver) ResolveAll(ctx context.Context, games []Game) ([]Resolved, er
 	var mu sync.Mutex
 
 	out := make([]Resolved, len(games))
-	var firstErr error
+	var failed int
 	var done int64
 	total := len(games)
 
@@ -117,8 +117,8 @@ func (r *Resolver) ResolveAll(ctx context.Context, games []Game) ([]Resolved, er
 			atomic.AddInt64(&done, 1)
 			mu.Lock()
 			defer mu.Unlock()
-			if err != nil && firstErr == nil {
-				firstErr = err
+			if err != nil {
+				failed++ // per-app failure — non-fatal, game is left pending
 			}
 			out[i] = res
 		}(i, g)
@@ -128,8 +128,14 @@ func (r *Resolver) ResolveAll(ctx context.Context, games []Game) ([]Resolved, er
 	if r.Progress != nil {
 		r.Progress(int(atomic.LoadInt64(&done)), total) // final 100% tick
 	}
-	if firstErr != nil {
-		return out, firstErr
+	// A single app's lookup failing (e.g. a transient 403/timeout) must not kill
+	// the whole run — those games are left pending. Only error if ALL failed,
+	// which signals ProtonDB is unreachable or blocking us.
+	if failed > 0 && failed == total {
+		return out, fmt.Errorf("all %d ProtonDB tier lookups failed (ProtonDB unreachable or blocking requests?)", total)
+	}
+	if failed > 0 {
+		fmt.Printf("warning: %d of %d games could not be looked up and were left pending\n", failed, total)
 	}
 	return out, nil
 }

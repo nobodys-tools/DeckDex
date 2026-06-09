@@ -95,12 +95,17 @@ esac
 
 # --- optional Steam Web API key --------------------------------------------
 printf '\nA free Steam Web API key fetches your FULL library (https://steamcommunity.com/dev/apikey).\n'
-printf 'Paste a key for the full library, or press Enter to use local installed games only:\n'
-printf 'Steam Web API key (optional): '
+printf 'Paste a key for the full library, or press Enter to use local installed games only.\n'
+printf 'Steam Web API key (input hidden, press Enter when done): '
 stty -echo < /dev/tty 2>/dev/null || true
 read -r key < /dev/tty || true
 stty echo < /dev/tty 2>/dev/null || true
-printf '\n'
+# Echo a masked confirmation so it's clear the key was captured.
+if [ -n "${key:-}" ]; then
+	printf '%s\n' "$(printf '%*s' "${#key}" '' | tr ' ' '*')"
+else
+	printf '(none — using local installed games)\n'
+fi
 
 # --- sync ------------------------------------------------------------------
 # Redirect the binary's stdin from the terminal so its write-confirmation prompt

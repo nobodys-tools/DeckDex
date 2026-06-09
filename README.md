@@ -66,8 +66,18 @@ and asks before writing, backs up your collections file first, and never touches
 collections you made by hand. Drop `--api-key` to run against local games only.
 
 > **Close Steam before writing.** Steam caches collections client-side and may overwrite
-> changes made while it's running. `sync`/`prune` refuse to write while Steam is up unless
-> you pass `--kill-steam`; the safe flow is: quit Steam → run `deckdex sync` → start Steam.
+> changes made while it's running. When run interactively, `sync`/`prune` **offer to close
+> Steam** for you; otherwise quit Steam first, or pass `--kill-steam`.
+
+### Unattended / cron
+
+For a scheduled sync, run it non-interactively — provide the key via the
+`DECKDEX_STEAM_API_KEY` env var (keeps it out of `ps`/history), and pass `--kill-steam --yes`
+so it closes Steam and writes without prompting:
+
+```sh
+DECKDEX_STEAM_API_KEY=xxxx deckdex sync --preset per-tier --kill-steam --yes
+```
 
 ### Other commands
 
