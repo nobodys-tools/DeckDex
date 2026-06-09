@@ -2,6 +2,15 @@
 
 > Steam **Deck** + **Dex** — a Pokédex-style index of your Steam library by ProtonDB tier.
 
+<p align="center">
+  <a href="https://github.com/nobodys-tools/DeckDex/releases/latest"><img src="https://img.shields.io/github/v/release/nobodys-tools/DeckDex?color=2ea44f" alt="Latest release"></a>
+  <a href="https://github.com/nobodys-tools/DeckDex/actions/workflows/release.yml"><img src="https://github.com/nobodys-tools/DeckDex/actions/workflows/release.yml/badge.svg" alt="Build"></a>
+  <img src="https://img.shields.io/badge/license-GPLv3-blue" alt="License: GPLv3">
+  <img src="https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20Windows-informational" alt="Platforms">
+  <img src="https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white" alt="Go 1.26">
+  <img src="https://img.shields.io/badge/code-AI%20authored-8A2BE2" alt="AI authored">
+</p>
+
 A headless CLI (`deckdex`) that organises your Steam library into **Steam Collections grouped by
 ProtonDB tier** (platinum / gold / silver / bronze / borked / native / pending), so you
 can see at a glance what runs well on Linux / Steam Deck — and keep those collections in
