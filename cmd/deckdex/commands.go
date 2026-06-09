@@ -540,10 +540,16 @@ func ensureSteamClosed(g globals) error {
 	}
 	fmt.Println("closing Steam ...")
 	_ = steam.KillSteam()
-	time.Sleep(2 * time.Second)
-	if steam.IsSteamRunning() {
-		fmt.Println("note: Steam is still shutting down; continuing")
+	// Wait for Steam to fully exit: it flushes its own collection state to the
+	// cloud-storage file on shutdown, so writing before it's gone risks being
+	// overwritten. Poll up to ~20s rather than guessing with a fixed sleep.
+	for i := 0; i < 40 && steam.IsSteamRunning(); i++ {
+		time.Sleep(500 * time.Millisecond)
 	}
+	if steam.IsSteamRunning() {
+		return fmt.Errorf("Steam did not exit in time — quit it manually and re-run (writing now risks being overwritten)")
+	}
+	fmt.Println("Steam closed.")
 	return nil
 }
 
